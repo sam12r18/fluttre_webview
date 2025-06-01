@@ -1,6 +1,6 @@
 {
-    "name": "my_project",
-    "short_name": "my_project",
+    "name": "webview3",
+    "short_name": "webview3",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

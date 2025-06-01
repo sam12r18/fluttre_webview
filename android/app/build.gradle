@@ -3,6 +3,11 @@ plugins {
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
@@ -24,8 +29,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "ir.damcheck.app"
-    // compileSdkVersion flutter.compileSdkVersion
-    compileSdkVersion 34  // ← مقدار دستی
+    compileSdk 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -46,17 +50,30 @@ android {
         applicationId "ir.damcheck.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 34  // ← مقدار دستی
-        // targetSdkVersion flutter.targetSdkVersion
-
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 4
+        versionName "1.4"
     }
+
+   signingConfigs {
+       release {
+           keyAlias keystoreProperties['keyAlias']
+           keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+       }
+   }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
+            // signingConfig signingConfigs.debug
+           signingConfig signingConfigs.release
+           minifyEnabled true
+           shrinkResources true
+           proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
         }
@@ -67,4 +84,6 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    // implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
