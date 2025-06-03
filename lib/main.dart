@@ -19,14 +19,21 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تنظیمات نوار وضعیت و ناوبری
+  // تنظیم حالت نوار وضعیت و ناوبری
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  // SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-  //   statusBarColor: Colors.transparent,
-  //   systemNavigationBarColor: Colors.white,
-  //   statusBarIconBrightness: Brightness.dark,
-  //   systemNavigationBarIconBrightness: Brightness.dark,
-  // ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.white,
+      // رنگ پس‌زمینه نوار وضعیت
+      systemNavigationBarColor: Colors.white,
+      // رنگ پس‌زمینه ناوبری پایین
+      statusBarIconBrightness: Brightness.dark,
+      // آیکن‌های نوار وضعیت مشکی
+      systemNavigationBarIconBrightness: Brightness.dark,
+      // آیکن‌های ناوبری مشکی
+      statusBarBrightness: Brightness.light, // برای iOS (در صورت نیاز)
+    ),
+  );
 
   // Firebase پیام پوش
   // await Firebase.initializeApp();
@@ -42,8 +49,8 @@ Future<void> main() async {
   });
 
   // سرویس پس‌زمینه
-  BackgroundFetchService.initialize();
-  BackgroundFetchService.registerPeriodicTask();
+  // BackgroundFetchService.initialize();
+  // BackgroundFetchService.registerPeriodicTask();
 
   runApp(MyApp());
 }
@@ -59,7 +66,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: GoogleFonts.vazirmatn().fontFamily,
+        fontFamily: GoogleFonts
+            .vazirmatn()
+            .fontFamily,
         primarySwatch: customOrange,
         scaffoldBackgroundColor: Colors.white,
         textTheme: TextTheme(
@@ -85,11 +94,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home:  SplashScreen(),
+      home: SplashScreen(),
       routes: {
-        '/login': (_) =>  LoginScreen(),
-        '/verify': (_) =>  VerifyScreen(),
-        '/mainwebview': (_) =>  MainWebViewPage(),
+        '/login': (_) => LoginScreen(),
+        '/verify': (_) => VerifyScreen(),
+        '/mainwebview': (_) => MainWebViewPage(),
       },
     );
   }

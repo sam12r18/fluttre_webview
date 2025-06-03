@@ -29,9 +29,10 @@ void callbackDispatcher() {
         // دریافت توکن JWT از SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('jwtToken') ?? '';
-        print('⚠️ تابع بک گراند فعال شد: ');
+        print('⚠️ ⛔تابع بک گراند فعال شد: ');
 
         if (token.isEmpty) {
+          print('⛔توکن برای فعالیت بکگراند موجود نیست: ');
           // توکن موجود نیست، نمی‌توان درخواست زد
           return Future.value(true);
         }
