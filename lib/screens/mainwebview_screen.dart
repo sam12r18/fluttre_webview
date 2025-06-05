@@ -8,8 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
-
-// import 'package:open_file/open_file.dart';
 import 'package:open_filex/open_filex.dart';
 
 class MainWebViewPage extends StatefulWidget {
@@ -101,139 +99,10 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
     super.dispose();
   }
 
-  // Future<bool> _onWillPop() async {
-  //   if (await _controller.canGoBack()) {
-  //     _controller.goBack();
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-        child: Scaffold(
-      body: InAppWebView(
-        key: webViewKey,
-        initialUrlRequest:
-            URLRequest(url: WebUri(widget.initialUrl ?? baseUrl)),
-        initialOptions: InAppWebViewGroupOptions(
-          crossPlatform: InAppWebViewOptions(
-            javaScriptEnabled: true,
-            useOnDownloadStart: true,
-            mediaPlaybackRequiresUserGesture: false,
-          ),
-          android: AndroidInAppWebViewOptions(
-            useHybridComposition: true,
-            allowFileAccess: true,
-          ),
-          ios: IOSInAppWebViewOptions(
-            allowsInlineMediaPlayback: true,
-          ),
-        ),
-        pullToRefreshController: _pullToRefreshController,
-        onWebViewCreated: (controller) async {
-          _webViewController = controller;
-
-          final prefs = await SharedPreferences.getInstance();
-          final sessionId = prefs.getString('session_id');
-          if (sessionId != null) {
-            await CookieManager.instance().setCookie(
-              url: WebUri(baseUrl),
-              name: 'session_id',
-              value: sessionId,
-              path: '/',
-            );
-          }
-        },
-        onLoadStop: (controller, url) async {
-          _pullToRefreshController?.endRefreshing();
-
-          final prefs = await SharedPreferences.getInstance();
-
-          final jwtToken = await controller.evaluateJavascript(
-              source: "localStorage.getItem('token')");
-          if (jwtToken != null && jwtToken != 'null') {
-            await prefs.setString('jwtToken', jwtToken.replaceAll('"', ''));
-          }
-
-          final locationEnabled = await controller.evaluateJavascript(
-              source: "localStorage.getItem('location_enabled')");
-          final cleaned = locationEnabled?.toString().replaceAll('"', '') ?? '';
-          await prefs.setBool('location_enabled', cleaned == 'true');
-
-          _initLocationTracking();
-        },
-        onDownloadStartRequest: (controller, request) async {
-          // درخواست همه مجوزها بر اساس نسخه اندروید
-          if (Platform.isAndroid) {
-            if (await Permission.storage.request().isGranted) {
-              final url = request.url.toString();
-              // final filename = request.suggestedFilename ?? "file_${DateTime
-              //     .now()
-              //     .millisecondsSinceEpoch}";
-
-              // final dir = await getExternalStorageDirectory();
-              // final filePath = '${dir?.path}/$filename';
-
-              try {
-                final downloadPath = await getDownloadPath();
-                final filePath =
-                    '$downloadPath/${request.suggestedFilename ?? "file.xls"}';
-                await Dio().download(url, filePath);
-
-                // await Dio().download(url, filePath);
-                print("✅ محل ذخیره شدن فایل: $filePath");
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text("✅ فایل دانلود شد:"),
-                        action: SnackBarAction(
-                          label: 'باز کردن در $filePath',
-                          onPressed: () {
-                            OpenFilex.open(filePath);
-                            // openDownloadedFile(filePath);
-                          },
-                        )),
-                  );
-                }
-              } catch (e) {
-                print("⛔ خطا در دانلود: $e");
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("⛔ خطا در دانلود فایل")),
-                  );
-                }
-              }
-            } else {
-              print("❌ کاربر مجوز ذخیره‌سازی نداد.");
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("❌ دسترسی به حافظه رد شد")),
-                );
-              }
-            }
-          }
-        },
-        androidOnPermissionRequest: (InAppWebViewController controller,
-            String origin, List<String> resources) async {
-          return PermissionRequestResponse(
-            resources: resources,
-            action: PermissionRequestResponseAction.GRANT,
-          );
-        },
-      ),
-    ));
-  }
-
-  // void openDownloadedFile(String filePath) async {
-  //   final result = await OpenFile.open(filePath);
-  //   print("Open result: ${result.message}");
-  // }
-
   Future<String?> getDownloadPath() async {
-    if (await Permission.storage.request().isGranted) {
+    if (await Permission.storage
+        .request()
+        .isGranted) {
       Directory? directory;
       if (Platform.isAndroid) {
         directory = Directory('/storage/emulated/0/Download');
@@ -249,4 +118,137 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
     }
     return null;
   }
+
+  // Future<bool> _onWillPop() async {
+  //   if (await _controller.canGoBack()) {
+  //     _controller.goBack();
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
+ @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: WillPopScope(
+        onWillPop: () async {
+          if (_webViewController != null) {
+            bool canGoBack = await _webViewController!.canGoBack();
+            if (canGoBack) {
+              _webViewController!.goBack();
+              return false; // جلو خروج رو می‌گیره چون می‌خوای فقط توی WebView برگرده
+            }
+          }
+          return true; // اجازه خروج از صفحه رو می‌ده
+        },
+        child: Scaffold(
+          body: InAppWebView(
+            key: webViewKey,
+            initialUrlRequest: URLRequest(
+              url: WebUri(widget.initialUrl ?? baseUrl),
+            ),
+            initialOptions: InAppWebViewGroupOptions(
+              crossPlatform: InAppWebViewOptions(
+                javaScriptEnabled: true,
+                useOnDownloadStart: true,
+                mediaPlaybackRequiresUserGesture: false,
+              ),
+              android: AndroidInAppWebViewOptions(
+                useHybridComposition: true,
+                allowFileAccess: true,
+              ),
+              ios: IOSInAppWebViewOptions(
+                allowsInlineMediaPlayback: true,
+              ),
+            ),
+            pullToRefreshController: _pullToRefreshController,
+            onWebViewCreated: (controller) async {
+              _webViewController = controller;
+
+              final prefs = await SharedPreferences.getInstance();
+              final sessionId = prefs.getString('session_id');
+              if (sessionId != null) {
+                await CookieManager.instance().setCookie(
+                  url: WebUri(baseUrl),
+                  name: 'session_id',
+                  value: sessionId,
+                  path: '/',
+                );
+              }
+            },
+            onLoadStop: (controller, url) async {
+              _pullToRefreshController?.endRefreshing();
+
+              final prefs = await SharedPreferences.getInstance();
+
+              final jwtToken = await controller.evaluateJavascript(
+                  source: "localStorage.getItem('token')");
+              if (jwtToken != null && jwtToken != 'null') {
+                await prefs.setString('jwtToken', jwtToken.replaceAll('"', ''));
+              }
+
+              final locationEnabled = await controller.evaluateJavascript(
+                  source: "localStorage.getItem('location_enabled')");
+              final cleaned = locationEnabled?.toString().replaceAll('"', '') ?? '';
+              await prefs.setBool('location_enabled', cleaned == 'true');
+
+              _initLocationTracking();
+            },
+            onDownloadStartRequest: (controller, request) async {
+              if (Platform.isAndroid) {
+                if (await Permission.storage.request().isGranted) {
+                  final url = request.url.toString();
+
+                  try {
+                    final downloadPath = await getDownloadPath();
+                    final filePath = '$downloadPath/${request.suggestedFilename ?? "file.xls"}';
+                    await Dio().download(url, filePath);
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("✅ فایل دانلود شد"),
+                          action: SnackBarAction(
+                            label: 'باز کردن',
+                            onPressed: () {
+                              OpenFilex.open(filePath);
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    print("⛔ خطا در دانلود: $e");
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("⛔ خطا در دانلود فایل")),
+                      );
+                    }
+                  }
+                } else {
+                  print("❌ کاربر مجوز ذخیره‌سازی نداد.");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("❌ دسترسی به حافظه رد شد")),
+                    );
+                  }
+                }
+              }
+            },
+            androidOnPermissionRequest: (controller, origin, resources) async {
+              return PermissionRequestResponse(
+                resources: resources,
+                action: PermissionRequestResponseAction.GRANT,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+// void openDownloadedFile(String filePath) async {
+//   final result = await OpenFile.open(filePath);
+//   print("Open result: ${result.message}");
+// }
+
 }
